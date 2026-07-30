@@ -205,7 +205,39 @@ body{
   margin-bottom:24px;
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:4px 16px;
+  gap:8px 12px;
+}
+.orig-opt{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid var(--rule);
+  padding:10px 12px;
+  cursor:pointer;
+  background:transparent;
+  text-align:left;
+  font-family:var(--sans);
+  font-size:13.5px;
+  color:var(--ink-soft);
+  transition:all .15s ease;
+}
+.orig-opt:hover:not(.locked){ border-color:var(--ink); }
+.orig-opt .obubble{
+  flex:none;
+  width:20px; height:20px;
+  border-radius:50%;
+  border:1.5px solid var(--ink-soft);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono);
+  font-size:10.5px;
+  color:var(--ink-soft);
+}
+.orig-opt.correct{ border-color:var(--accent-correct); background:rgba(47,93,58,0.06); color:var(--ink); }
+.orig-opt.correct .obubble{ background:var(--accent-correct); border-color:var(--accent-correct); color:#fff; }
+.orig-opt.wrong{ border-color:var(--accent-wrong); background:rgba(140,58,43,0.06); }
+.orig-opt.wrong .obubble{ background:var(--accent-wrong); border-color:var(--accent-wrong); color:#fff; }
+.orig-opt.locked{ cursor:default; }
+.orig-opt-static{ padding:2px 0; }  
 }
 
 .divider{
@@ -417,7 +449,8 @@ body{
     <div class="q-source" id="q-chapter"></div>
     <div class="q-material" id="q-material"></div>
     <img class="q-image" id="q-image" style="display:none;">
-    <div class="q-stem" id="q-stem"></div>
+        <div class="q-stem" id="q-stem"></div>
+    <div class="prompt-label" id="answer-prompt" style="display:none;">你选哪个答案?</div>
     <div class="q-options-orig" id="q-options-orig"></div>
 
     <hr class="divider">
@@ -606,8 +639,11 @@ body{
       typeOptions: buildTypeOptions(q),
       picked: null,
       correct: null,
+      pickedAnswer: null,
+      answerCorrect: null,
       timeSec: 0,
     }));
+
 
     session = {
       mode: selectedMode,
@@ -652,17 +688,40 @@ body{
       img.style.display = 'none';
     }
 
+
     document.getElementById('q-stem').textContent = q.question;
 
     const optWrap = document.getElementById('q-options-orig');
+    const answerPrompt = document.getElementById('answer-prompt');
     optWrap.innerHTML = '';
-    ['A','B','C','D'].forEach(letter => {
-      if(q.options[letter]){
-        const d = document.createElement('div');
-        d.textContent = letter + '. ' + q.options[letter];
-        optWrap.appendChild(d);
-      }
-    });
+    const letters4 = ['A','B','C','D'];
+    if(session.mode === 'type-answer'){
+      answerPrompt.style.display = 'block';
+      optWrap.style.display = 'flex';
+      optWrap.style.flexDirection = 'column';
+      optWrap.style.gap = '8px';
+      letters4.forEach(letter => {
+        if(!q.options[letter]) return;
+        const btn = document.createElement('button');
+        btn.className = 'orig-opt';
+        btn.dataset.letter = letter;
+        btn.innerHTML = '<span class="obubble">' + letter + '</span><span>' + q.options[letter] + '</span>';
+        btn.addEventListener('click', () => pickAnswer(letter));
+        optWrap.appendChild(btn);
+      });
+    } else {
+      answerPrompt.style.display = 'none';
+      optWrap.style.display = 'grid';
+      optWrap.style.gridTemplateColumns = '1fr 1fr';
+      letters4.forEach(letter => {
+        if(q.options[letter]){
+          const d = document.createElement('div');
+          d.className = 'orig-opt-static';
+          d.textContent = letter + '. ' + q.options[letter];
+          optWrap.appendChild(d);
+        }
+      });
+    }
 
     const typeWrap = document.getElementById('type-options');
     typeWrap.innerHTML = '';
@@ -680,13 +739,26 @@ body{
     });
 
     document.getElementById('feedback').className = 'feedback';
+    document.getElementById('fl-answer').style.display = 'none';
     document.getElementById('next-btn').className = 'next-btn';
     session.qStartedAt = Date.now();
+}
+  function bothAnswered(item){
+    if(session.mode === 'type-answer'){
+      return item.picked !== null && item.pickedAnswer !== null;
+    }
+    return item.picked !== null;
   }
 
+  function checkAdvance(item){
+    if(bothAnswered(item)){
+      document.getElementById('next-btn').className = 'next-btn show';
+    }
+    
+  }
   function pickType(label){
     const item = session.questions[session.idx];
-    if(item.picked) return; // already answered
+    if(item.picked) return;
 
     item.picked = label;
     item.correct = (label === item.q.type_label);
@@ -701,18 +773,33 @@ body{
 
     const fb = document.getElementById('feedback');
     fb.className = 'feedback show ' + (item.correct ? 'fb-correct' : 'fb-wrong');
-    document.getElementById('fh-text').textContent = item.correct ? '判断正确' : '判断错误';
+    document.getElementById('fh-text').textContent = item.correct ? '题型判断正确' : '题型判断错误';
     document.getElementById('fl-correct-type').innerHTML = '正确题型:<b>' + item.q.type_label + '</b>';
 
-    const ansLine = document.getElementById('fl-answer');
-    if(session.mode === 'type-answer'){
-      ansLine.style.display = 'block';
-      ansLine.innerHTML = '原题答案:<b>' + item.q.answer + '</b>';
-    } else {
-      ansLine.style.display = 'none';
-    }
+    checkAdvance(item);
+  }
 
-    document.getElementById('next-btn').className = 'next-btn show';
+  function pickAnswer(letter){
+    const item = session.questions[session.idx];
+    if(item.pickedAnswer) return;
+
+    item.pickedAnswer = letter;
+    item.answerCorrect = (letter === item.q.answer);
+
+    document.querySelectorAll('.orig-opt').forEach(btn => {
+      btn.classList.add('locked');
+      if(btn.dataset.letter === item.q.answer) btn.classList.add('correct');
+      else if(btn.dataset.letter === letter) btn.classList.add('wrong');
+    });
+
+    const fb = document.getElementById('feedback');
+    if(!fb.classList.contains('show')) fb.classList.add('show');
+    const ansLine = document.getElementById('fl-answer');
+    ansLine.style.display = 'block';
+    ansLine.innerHTML = (item.answerCorrect ? '原题答案判断正确:' : '原题答案判断错误,正确答案是:') + '<b>' + item.q.answer + '</b>';
+
+    checkAdvance(item);
+  
   }
 
   document.getElementById('next-btn').addEventListener('click', () => {
