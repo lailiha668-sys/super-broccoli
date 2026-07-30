@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>资料分析 · 题型识别训练</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<style>
+@font-face { font-family: 'system-serif'; src: local('Songti SC'), local('STSong'), local('Noto Serif SC'); }
+
+:root{
+  --paper:#FAFAF8;
+  --paper-dim:#F1F0EB;
+  --ink:#1A1A18;
+  --ink-soft:#59584F;
+  --ink-faint:#9A9890;
+  --rule:#DAD8CE;
+  --rule-strong:#1A1A18;
+  --accent-correct:#2F5D3A;
+  --accent-wrong:#8C3A2B;
+  --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --serif: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.6;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{
+  max-width:640px;
+  margin:0 auto;
+  padding:32px 20px 80px;
+}
+
+/* ---------- Header / masthead ---------- */
+.masthead{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  border-bottom:2px solid var(--rule-strong);
+  padding-bottom:14px;
+  margin-bottom:28px;
+}
+.masthead h1{
+  font-family:var(--serif);
+  font-weight:700;
+  font-size:22px;
+  letter-spacing:0.02em;
+}
+.masthead .tag{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink-faint);
+  letter-spacing:0.06em;
+}
+
+/* ---------- Screens ---------- */
+.screen{ display:none; }
+.screen.active{ display:block; }
+
+/* ---------- Setup form ---------- */
+.field{ margin-bottom:28px; }
+.field-label{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.1em;
+  color:var(--ink-faint);
+  text-transform:uppercase;
+  margin-bottom:10px;
+  display:block;
+}
+.chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{
+  border:1px solid var(--rule);
+  background:transparent;
+  color:var(--ink-soft);
+  padding:9px 16px;
+  font-size:14px;
+  font-family:var(--sans);
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.chip:hover{ border-color:var(--ink); color:var(--ink); }
+.chip.selected{
+  background:var(--ink);
+  border-color:var(--ink);
+  color:var(--paper);
+}
+.mode-option{
+  border:1px solid var(--rule);
+  padding:14px 16px;
+  margin-bottom:8px;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.mode-option:hover{ border-color:var(--ink); }
+.mode-option.selected{ border-color:var(--ink); background:var(--paper-dim); }
+.mode-option .mtitle{ font-weight:600; font-size:14px; margin-bottom:2px; }
+.mode-option .mdesc{ font-size:12.5px; color:var(--ink-soft); }
+
+.num-input-row{ display:flex; align-items:center; gap:12px; }
+.num-input{
+  font-family:var(--mono);
+  font-size:20px;
+  width:80px;
+  padding:8px 10px;
+  border:1px solid var(--rule);
+  background:transparent;
+  color:var(--ink);
+  text-align:center;
+}
+.num-input:focus{ outline:none; border-color:var(--ink); }
+.num-sub{ font-size:12px; color:var(--ink-faint); }
+
+.start-btn{
+  width:100%;
+  padding:16px;
+  background:var(--ink);
+  color:var(--paper);
+  border:none;
+  font-family:var(--serif);
+  font-size:16px;
+  letter-spacing:0.04em;
+  cursor:pointer;
+  margin-top:8px;
+  transition:opacity .15s ease;
+}
+.start-btn:hover{ opacity:0.85; }
+.start-btn:disabled{ opacity:0.3; cursor:not-allowed; }
+
+.history-link{
+  display:block;
+  text-align:center;
+  margin-top:24px;
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink-faint);
+  text-decoration:none;
+  border-bottom:1px solid transparent;
+  cursor:pointer;
+}
+.history-link:hover{ color:var(--ink); border-bottom-color:var(--ink); }
+
+/* ---------- Quiz progress bar ---------- */
+.progress-bar{
+  height:2px;
+  background:var(--rule);
+  margin-bottom:20px;
+  position:relative;
+}
+.progress-fill{
+  height:100%;
+  background:var(--ink);
+  transition:width .2s ease;
+}
+.progress-meta{
+  display:flex;
+  justify-content:space-between;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink-faint);
+  margin-bottom:20px;
+}
+#timer{ font-variant-numeric:tabular-nums; }
+
+/* ---------- Question card ---------- */
+.q-source{
+  font-family:var(--mono);
+  font-size:10.5px;
+  color:var(--ink-faint);
+  margin-bottom:10px;
+  letter-spacing:0.04em;
+}
+.q-material{
+  font-size:14.5px;
+  color:var(--ink-soft);
+  white-space:pre-wrap;
+  margin-bottom:14px;
+  padding-left:12px;
+  border-left:2px solid var(--rule);
+}
+.q-image{
+  max-width:100%;
+  border:1px solid var(--rule);
+  margin-bottom:16px;
+  display:block;
+}
+.q-stem{
+  font-size:16.5px;
+  font-weight:600;
+  margin-bottom:6px;
+  line-height:1.65;
+}
+.q-options-orig{
+  font-size:13.5px;
+  color:var(--ink-soft);
+  margin-bottom:24px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px 16px;
+}
+
+.divider{
+  border:none;
+  border-top:1px solid var(--rule);
+  margin:24px 0;
+}
+
+.prompt-label{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.1em;
+  color:var(--ink-faint);
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
+
+/* ---------- Bubble-sheet style type options ---------- */
+.type-options{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+.type-opt{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  border:1px solid var(--rule);
+  padding:14px 16px;
+  cursor:pointer;
+  background:transparent;
+  text-align:left;
+  font-family:var(--sans);
+  transition:all .15s ease;
+}
+.type-opt:hover:not(.locked){ border-color:var(--ink); }
+.bubble{
+  flex:none;
+  width:26px; height:26px;
+  border-radius:50%;
+  border:1.5px solid var(--ink);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink);
+}
+.type-opt .ttext{ font-size:14px; line-height:1.5; }
+.type-opt .ttext .path-main{ display:block; }
+.type-opt .ttext .path-sub{ display:block; font-size:12px; color:var(--ink-faint); margin-top:2px; }
+
+.type-opt.picked .bubble{ background:var(--ink); color:var(--paper); }
+.type-opt.correct{ border-color:var(--accent-correct); background:rgba(47,93,58,0.06); }
+.type-opt.correct .bubble{ background:var(--accent-correct); border-color:var(--accent-correct); color:#fff; }
+.type-opt.wrong{ border-color:var(--accent-wrong); background:rgba(140,58,43,0.06); }
+.type-opt.wrong .bubble{ background:var(--accent-wrong); border-color:var(--accent-wrong); color:#fff; }
+.type-opt.locked{ cursor:default; }
+
+/* ---------- Feedback panel ---------- */
+.feedback{
+  display:none;
+  padding:16px 18px;
+  margin-bottom:20px;
+  border-left:3px solid var(--ink);
+  background:var(--paper-dim);
+}
+.feedback.show{ display:block; }
+.feedback .fh{ font-family:var(--mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; }
+.feedback.fb-correct .fh{ color:var(--accent-correct); }
+.feedback.fb-wrong .fh{ color:var(--accent-wrong); }
+.feedback .fline{ font-size:13.5px; margin-bottom:4px; }
+.feedback .fline b{ font-weight:600; }
+
+.next-btn{
+  width:100%;
+  padding:14px;
+  background:var(--ink);
+  color:var(--paper);
+  border:none;
+  font-family:var(--serif);
+  font-size:15px;
+  cursor:pointer;
+  display:none;
+}
+.next-btn.show{ display:block; }
+.next-btn:hover{ opacity:0.85; }
+
+/* ---------- Result screen ---------- */
+.result-score{
+  font-family:var(--serif);
+  font-size:56px;
+  font-weight:700;
+  text-align:center;
+  margin:20px 0 4px;
+}
+.result-sub{
+  text-align:center;
+  color:var(--ink-soft);
+  font-size:14px;
+  margin-bottom:32px;
+}
+.stat-row{
+  display:flex;
+  justify-content:space-between;
+  padding:14px 0;
+  border-bottom:1px solid var(--rule);
+  font-size:14px;
+}
+.stat-row .slabel{ color:var(--ink-soft); }
+.stat-row .sval{ font-family:var(--mono); font-weight:600; }
+
+.type-breakdown{ margin-top:24px; }
+.tb-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid var(--rule);
+  font-size:13px;
+}
+.tb-bar-bg{ flex:1; height:4px; background:var(--rule); margin:0 12px; position:relative; }
+.tb-bar-fill{ height:100%; background:var(--ink); }
+.tb-name{ flex:none; width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tb-frac{ flex:none; font-family:var(--mono); font-size:12px; color:var(--ink-faint); width:44px; text-align:right; }
+
+/* ---------- History screen ---------- */
+.hist-entry{
+  padding:14px 0;
+  border-bottom:1px solid var(--rule);
+}
+.hist-top{ display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:4px; }
+.hist-date{ font-family:var(--mono); font-size:11px; color:var(--ink-faint); }
+.hist-meta{ font-size:12px; color:var(--ink-soft); }
+.empty-state{ text-align:center; color:var(--ink-faint); padding:60px 20px; font-size:14px; }
+
+.back-link{
+  display:inline-block;
+  margin-bottom:20px;
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink-soft);
+  cursor:pointer;
+  text-decoration:none;
+}
+.back-link:hover{ color:var(--ink); }
+
+.clear-btn{
+  margin-top:24px;
+  width:100%;
+  padding:12px;
+  background:transparent;
+  border:1px solid var(--rule);
+  color:var(--ink-faint);
+  font-size:12px;
+  font-family:var(--mono);
+  cursor:pointer;
+}
+.clear-btn:hover{ border-color:var(--accent-wrong); color:var(--accent-wrong); }
+
+.loading{ text-align:center; padding:80px 20px; color:var(--ink-faint); font-family:var(--mono); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <h1>资料分析 · 题型识别</h1>
+    <span class="tag" id="bank-count">— 题</span>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div class="screen active" id="screen-setup">
+    <div id="setup-loading" class="loading">正在加载题库…</div>
+    <div id="setup-body" style="display:none;">
+
+      <div class="field">
+        <span class="field-label">训练模式</span>
+        <div class="mode-option selected" data-mode="type-only">
+          <div class="mtitle">纯识别题型</div>
+          <div class="mdesc">只判断这道题考的是什么类型,不看原题答案</div>
+        </div>
+        <div class="mode-option" data-mode="type-answer">
+          <div class="mtitle">识别题型 + 对答案</div>
+          <div class="mdesc">判断题型后,同时给出原题正确选项(书中无解析步骤,只有答案)</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">题目范围</span>
+        <div class="chip-row" id="chapter-chips"></div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">题数</span>
+        <div class="num-input-row">
+          <input type="number" class="num-input" id="q-count" value="20" min="5" max="200">
+          <span class="num-sub">最多 <span id="max-count">—</span> 题(当前范围)</span>
+        </div>
+      </div>
+
+      <button class="start-btn" id="start-btn">开始练习</button>
+      <a class="history-link" id="show-history">查看历史记录</a>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="screen" id="screen-quiz">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-meta">
+      <span id="q-index">1 / 20</span>
+      <span id="timer">00:00</span>
+    </div>
+
+    <div class="q-source" id="q-chapter"></div>
+    <div class="q-material" id="q-material"></div>
+    <img class="q-image" id="q-image" style="display:none;">
+    <div class="q-stem" id="q-stem"></div>
+    <div class="q-options-orig" id="q-options-orig"></div>
+
+    <hr class="divider">
+    <div class="prompt-label">这道题考的是哪种题型?</div>
+    <div class="type-options" id="type-options"></div>
+
+    <div class="feedback" id="feedback">
+      <div class="fh" id="fh-text"></div>
+      <div class="fline" id="fl-correct-type"></div>
+      <div class="fline" id="fl-answer" style="display:none;"></div>
+    </div>
+
+    <button class="next-btn" id="next-btn">下一题</button>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="screen-result">
+    <div class="result-score" id="result-score">0/0</div>
+    <div class="result-sub" id="result-sub"></div>
+
+    <div class="stat-row"><span class="slabel">正确率</span><span class="sval" id="stat-acc"></span></div>
+    <div class="stat-row"><span class="slabel">总用时</span><span class="sval" id="stat-total-time"></span></div>
+    <div class="stat-row"><span class="slabel">平均每题</span><span class="sval" id="stat-avg-time"></span></div>
+
+    <div class="type-breakdown" id="type-breakdown"></div>
+
+    <button class="start-btn" id="result-restart" style="margin-top:32px;">再来一组</button>
+    <a class="history-link" id="result-home">返回首页</a>
+  </div>
+
+  <!-- HISTORY SCREEN -->
+  <div class="screen" id="screen-history">
+    <a class="back-link" id="hist-back">‹ 返回</a>
+    <div id="hist-list"></div>
+    <button class="clear-btn" id="clear-history">清除全部历史记录</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const STORAGE_KEY = 'zlfx_history_v1';
+  let BANK = [];
+  let CHAPTERS = [];
+  let session = null; // current quiz session state
+
+  // ---------- storage helpers (with in-memory fallback) ----------
+  let memoryStore = null;
+  function loadHistory(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){
+      return memoryStore || [];
+    }
+  }
+  function saveHistory(list){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }catch(e){
+      memoryStore = list;
+      console.warn('localStorage 不可用(预览环境常见),本次记录仅在当前页面内存中保留。部署到 GitHub Pages 后会正常持久化。');
+    }
+  }
+
+  // ---------- load data ----------
+  fetch('data.json').then(r => r.json()).then(data => {
+    BANK = data;
+    const chapterSet = [...new Set(BANK.map(q => q.chapter))];
+    CHAPTERS = chapterSet;
+    initSetupScreen();
+  }).catch(err => {
+    document.getElementById('setup-loading').textContent = '题库加载失败: ' + err.message + '(请确认 data.json 与 index.html 在同一目录,且通过 http 服务访问,而不是直接双击打开文件)';
+  });
+
+  let selectedChapters = new Set();
+  let selectedMode = 'type-only';
+
+  function initSetupScreen(){
+    document.getElementById('bank-count').textContent = BANK.length + ' 题';
+    document.getElementById('setup-loading').style.display = 'none';
+    document.getElementById('setup-body').style.display = 'block';
+
+    const chipRow = document.getElementById('chapter-chips');
+    const allChip = document.createElement('button');
+    allChip.className = 'chip selected';
+    allChip.textContent = '全部';
+    allChip.dataset.all = '1';
+    chipRow.appendChild(allChip);
+    selectedChapters = new Set(CHAPTERS);
+
+    CHAPTERS.forEach(ch => {
+      const chip = document.createElement('button');
+      chip.className = 'chip selected';
+      chip.textContent = ch.replace(/^第[一二三四五六七八九十]+章\s*/, '');
+      chip.dataset.chapter = ch;
+      chipRow.appendChild(chip);
+    });
+
+    chipRow.addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if(!btn) return;
+      if(btn.dataset.all){
+        selectedChapters = new Set(CHAPTERS);
+        [...chipRow.children].forEach(c => c.classList.add('selected'));
+      } else {
+        const ch = btn.dataset.chapter;
+        if(selectedChapters.has(ch)){
+          selectedChapters.delete(ch);
+          btn.classList.remove('selected');
+        } else {
+          selectedChapters.add(ch);
+          btn.classList.add('selected');
+        }
+        allChip.classList.toggle('selected', selectedChapters.size === CHAPTERS.length);
+      }
+      updateMaxCount();
+    });
+
+    document.querySelectorAll('.mode-option').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedMode = el.dataset.mode;
+      });
+    });
+
+    updateMaxCount();
+    document.getElementById('start-btn').addEventListener('click', startQuiz);
+    document.getElementById('show-history').addEventListener('click', showHistoryScreen);
+  }
+
+  function poolForSelection(){
+    return BANK.filter(q => selectedChapters.has(q.chapter));
+  }
+
+  function updateMaxCount(){
+    const n = poolForSelection().length;
+    document.getElementById('max-count').textContent = n;
+    const input = document.getElementById('q-count');
+    input.max = n;
+    if(parseInt(input.value) > n) input.value = n;
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildTypeOptions(correctQ){
+    // correct label + 2-3 distractors, mixing same-chapter and random
+    const correctLabel = correctQ.type_label;
+    const sameChapterPool = BANK.filter(q => q.chapter === correctQ.chapter && q.type_label !== correctLabel);
+    const otherPool = BANK.filter(q => q.chapter !== correctQ.chapter);
+
+    const distractorLabels = new Set();
+    shuffle(sameChapterPool).forEach(q => {
+      if(distractorLabels.size < 2) distractorLabels.add(q.type_label);
+    });
+    shuffle(otherPool).forEach(q => {
+      if(distractorLabels.size < 3) distractorLabels.add(q.type_label);
+    });
+    // fallback if not enough
+    if(distractorLabels.size < 3){
+      shuffle(BANK).forEach(q => {
+        if(q.type_label !== correctLabel && distractorLabels.size < 3) distractorLabels.add(q.type_label);
+      });
+    }
+
+    const options = shuffle([correctLabel, ...distractorLabels]);
+    return options;
+  }
+
+  // ---------- quiz flow ----------
+  function startQuiz(){
+    const pool = shuffle(poolForSelection());
+    const count = Math.min(parseInt(document.getElementById('q-count').value) || 20, pool.length);
+    const questions = pool.slice(0, count).map(q => ({
+      q,
+      typeOptions: buildTypeOptions(q),
+      picked: null,
+      correct: null,
+      timeSec: 0,
+    }));
+
+    session = {
+      mode: selectedMode,
+      questions,
+      idx: 0,
+      startedAt: Date.now(),
+      qStartedAt: Date.now(),
+      timerHandle: null,
+    };
+
+    switchScreen('screen-quiz');
+    renderQuestion();
+    startTimer();
+  }
+
+  function startTimer(){
+    clearInterval(session.timerHandle);
+    session.timerHandle = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const ss = String(elapsed % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = mm + ':' + ss;
+    }, 1000);
+  }
+
+  function renderQuestion(){
+    const item = session.questions[session.idx];
+    const q = item.q;
+
+    document.getElementById('q-index').textContent = (session.idx + 1) + ' / ' + session.questions.length;
+    document.getElementById('progress-fill').style.width = (session.idx / session.questions.length * 100) + '%';
+
+    document.getElementById('q-chapter').textContent = q.full_path_label;
+    document.getElementById('q-material').textContent = q.material || '';
+    document.getElementById('q-material').style.display = q.material ? 'block' : 'none';
+
+    const img = document.getElementById('q-image');
+    if(q.images && q.images.length){
+      img.src = q.images[0];
+      img.style.display = 'block';
+    } else {
+      img.style.display = 'none';
+    }
+
+    document.getElementById('q-stem').textContent = q.question;
+
+    const optWrap = document.getElementById('q-options-orig');
+    optWrap.innerHTML = '';
+    ['A','B','C','D'].forEach(letter => {
+      if(q.options[letter]){
+        const d = document.createElement('div');
+        d.textContent = letter + '. ' + q.options[letter];
+        optWrap.appendChild(d);
+      }
+    });
+
+    const typeWrap = document.getElementById('type-options');
+    typeWrap.innerHTML = '';
+    const letters = ['A','B','C','D'];
+    item.typeOptions.forEach((label, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'type-opt';
+      btn.dataset.label = label;
+      const parts = label.split(' > ');
+      btn.innerHTML = '<span class="bubble">' + letters[i] + '</span>' +
+        '<span class="ttext"><span class="path-main">' + parts[parts.length-1] + '</span>' +
+        '<span class="path-sub">' + parts.slice(0, -1).join(' > ') + '</span></span>';
+      btn.addEventListener('click', () => pickType(label));
+      typeWrap.appendChild(btn);
+    });
+
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('next-btn').className = 'next-btn';
+    session.qStartedAt = Date.now();
+  }
+
+  function pickType(label){
+    const item = session.questions[session.idx];
+    if(item.picked) return; // already answered
+
+    item.picked = label;
+    item.correct = (label === item.q.type_label);
+    item.timeSec = (Date.now() - session.qStartedAt) / 1000;
+
+    document.querySelectorAll('.type-opt').forEach(btn => {
+      btn.classList.add('locked');
+      if(btn.dataset.label === item.q.type_label) btn.classList.add('correct');
+      else if(btn.dataset.label === label) btn.classList.add('wrong');
+      if(btn.dataset.label === label) btn.classList.add('picked');
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback show ' + (item.correct ? 'fb-correct' : 'fb-wrong');
+    document.getElementById('fh-text').textContent = item.correct ? '判断正确' : '判断错误';
+    document.getElementById('fl-correct-type').innerHTML = '正确题型:<b>' + item.q.type_label + '</b>';
+
+    const ansLine = document.getElementById('fl-answer');
+    if(session.mode === 'type-answer'){
+      ansLine.style.display = 'block';
+      ansLine.innerHTML = '原题答案:<b>' + item.q.answer + '</b>';
+    } else {
+      ansLine.style.display = 'none';
+    }
+
+    document.getElementById('next-btn').className = 'next-btn show';
+  }
+
+  document.getElementById('next-btn').addEventListener('click', () => {
+    session.idx++;
+    if(session.idx >= session.questions.length){
+      finishQuiz();
+    } else {
+      renderQuestion();
+    }
+  });
+
+  function finishQuiz(){
+    clearInterval(session.timerHandle);
+    const totalSec = (Date.now() - session.startedAt) / 1000;
+    const correctCount = session.questions.filter(q => q.correct).length;
+    const total = session.questions.length;
+
+    // per-chapter breakdown
+    const byChapter = {};
+    session.questions.forEach(item => {
+      const ch = item.q.chapter.replace(/^第[一二三四五六七八九十]+章\s*/, '');
+      if(!byChapter[ch]) byChapter[ch] = {correct:0, total:0};
+      byChapter[ch].total++;
+      if(item.correct) byChapter[ch].correct++;
+    });
+
+    const record = {
+      date: new Date().toISOString(),
+      mode: session.mode,
+      total,
+      correct: correctCount,
+      totalSec: Math.round(totalSec),
+      perQuestionSec: session.questions.map(q => Math.round(q.timeSec * 10) / 10),
+      byChapter,
+    };
+    const hist = loadHistory();
+    hist.unshift(record);
+    saveHistory(hist);
+
+    renderResult(record);
+    switchScreen('screen-result');
+  }
+
+  function fmtTime(sec){
+    const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+    return m + '分' + String(s).padStart(2,'0') + '秒';
+  }
+
+  function renderResult(record){
+    document.getElementById('result-score').textContent = record.correct + '/' + record.total;
+    document.getElementById('result-sub').textContent = '正确率 ' + Math.round(record.correct/record.total*100) + '%';
+    document.getElementById('stat-acc').textContent = Math.round(record.correct/record.total*100) + '%';
+    document.getElementById('stat-total-time').textContent = fmtTime(record.totalSec);
+    document.getElementById('stat-avg-time').textContent = fmtTime(record.totalSec / record.total);
+
+    const bd = document.getElementById('type-breakdown');
+    bd.innerHTML = '<div class="field-label" style="margin-bottom:12px;">分章节正确率</div>';
+    Object.entries(record.byChapter).sort((a,b) => b[1].total - a[1].total).forEach(([ch, stat]) => {
+      const pct = Math.round(stat.correct / stat.total * 100);
+      const row = document.createElement('div');
+      row.className = 'tb-row';
+      row.innerHTML = '<span class="tb-name">' + ch + '</span>' +
+        '<span class="tb-bar-bg"><span class="tb-bar-fill" style="width:' + pct + '%"></span></span>' +
+        '<span class="tb-frac">' + stat.correct + '/' + stat.total + '</span>';
+      bd.appendChild(row);
+    });
+  }
+
+  document.getElementById('result-restart').addEventListener('click', () => switchScreen('screen-setup'));
+  document.getElementById('result-home').addEventListener('click', () => switchScreen('screen-setup'));
+
+  // ---------- history screen ----------
+  function showHistoryScreen(){
+    const hist = loadHistory();
+    const listEl = document.getElementById('hist-list');
+    listEl.innerHTML = '';
+    if(hist.length === 0){
+      listEl.innerHTML = '<div class="empty-state">还没有做题记录</div>';
+    } else {
+      hist.forEach(r => {
+        const d = new Date(r.date);
+        const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+          ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        const entry = document.createElement('div');
+        entry.className = 'hist-entry';
+        entry.innerHTML = '<div class="hist-top"><span>' + r.correct + '/' + r.total + ' 正确 (' + Math.round(r.correct/r.total*100) + '%)</span><span class="hist-date">' + dateStr + '</span></div>' +
+          '<div class="hist-meta">用时 ' + fmtTime(r.totalSec) + ' · 模式:' + (r.mode === 'type-answer' ? '识别+对答案' : '纯识别') + '</div>';
+        listEl.appendChild(entry);
+      });
+    }
+    switchScreen('screen-history');
+  }
+
+  document.getElementById('hist-back').addEventListener('click', () => switchScreen('screen-setup'));
+  document.getElementById('clear-history').addEventListener('click', () => {
+    if(confirm('确定要清除全部历史记录吗?此操作无法撤销。')){
+      saveHistory([]);
+      showHistoryScreen();
+    }
+  });
+
+  // ---------- screen switching ----------
+  function switchScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+})();
+</script>
+</body>
+</html>
